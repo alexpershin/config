@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server-service
+  labels:
+    app: config-server-service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8888
+      protocol: TCP
+      name: http
+  selector:
+    app: config-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+  labels:
+    app: config-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+    spec:
+      containers:
+        - name: config-service
+          image: config-server
+          imagePullPolicy: Never # Чтобы не пытаться тянуть образ из какого либо удаленного хранилища
+          env:
+            - name: URI_TO_GIT_REPOSITORY
+              value: https://luxproject.luxoft.com/stash/scm/~apershin/az-config.git
+            - name: CLONE_ON_START
+              value: true
+            - name: CLOUD_BUS_ENABLE
+              value: false
+            - name: KAFKA_BROKER
+              value: kafka:9092
+          ports:
+            - containerPort: 8888
+              protocol: TCP
